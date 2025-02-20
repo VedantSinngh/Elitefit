@@ -1,6 +1,3 @@
-Below is a `README.md` file tailored for your "EliteFit" React Native project. It includes an overview, setup instructions, project structure, dependencies, and other relevant details to help developers (or yourself) understand and work with the project.
-
----
 
 # EliteFit - React Native Fitness App
 
