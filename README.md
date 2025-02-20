@@ -153,4 +153,3 @@ This project is unlicensed (for personal use). Modify as needed for distribution
 - Add a backend setup section if you have specific instructions (e.g., a Node.js server).
 - Update the license section if you choose one (e.g., MIT).
 
-Save this as `README.md` in your project root, and it’ll provide clear guidance for setup and usage! Let me know if you need adjustments.
