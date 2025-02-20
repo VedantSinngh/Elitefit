@@ -1,39 +1,54 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import { Stack } from "expo-router";
+import { useEffect, useState } from "react";
+import * as SplashScreen from "expo-splash-screen";
+import { View, Image } from "react-native";
+import tw from "tailwind-react-native-classnames";
 
-import { useColorScheme } from '@/hooks/useColorScheme';
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
+  const [appIsReady, setAppIsReady] = useState(false);
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
+    async function prepare() {
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 4000));
+      } catch (e) {
+        console.warn("Preparation failed:", e);
+      } finally {
+        setAppIsReady(true);
+        await SplashScreen.hideAsync();
+      }
     }
-  }, [loaded]);
+    prepare();
+  }, []);
 
-  if (!loaded) {
-    return null;
+  if (!appIsReady) {
+    return (
+      <View style={tw`flex-1 justify-center items-center`}>
+        <Image
+          source={require("../assets/images/splash.png")}
+          style={tw`absolute w-full h-full`}
+          resizeMode="cover"
+        />
+        <Image
+          source={require("../assets/images/logo.png")}
+          style={tw`w-40 h-40`}
+          resizeMode="contain"
+        />
+      </View>
+    );
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <Stack>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="Onboarding" options={{ headerShown: false }} />
+      <Stack.Screen name="auth/login" options={{ headerShown: false }} />
+      <Stack.Screen name="auth/signup" options={{ headerShown: false }} />
+      <Stack.Screen name="auth/forgotPassword" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="+not-found" options={{ headerShown: false }} />
+    </Stack>
   );
 }
