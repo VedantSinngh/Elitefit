@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, ScrollView, Switch, Platform } from "reac
 import { SafeAreaView } from "react-native-safe-area-context";
 import { User, Bell, Shield, Smartphone, HelpCircle, ChevronRight, LogOut, Share2, Heart, Cloud, Languages, Moon } from "lucide-react-native";
 import { useRouter } from "expo-router";
+import { signOut } from "../../lib/appwrite";
+import { Alert } from "react-native";
 
 interface SettingsSectionProps { title: string; children: React.ReactNode; }
 interface SettingsItemProps { icon: React.ElementType; title: string; subtitle?: string; rightElement?: React.ReactNode; onPress: () => void; }
@@ -30,9 +32,14 @@ export default function SettingsScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = React.useState(false);
 
-  const handleLogout = () => {
-    // Add logout logic (e.g., clear AsyncStorage)
-    router.push("/auth/login");
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      Alert.alert("Success", "Logged out successfully!");
+      router.replace("/auth/login");
+    } catch (error) {
+      Alert.alert("Logout Failed", error.message);
+    }
   };
 
   return (

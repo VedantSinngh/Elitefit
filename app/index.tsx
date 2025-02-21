@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, SafeAreaView, Animated, Dimensions, Statu
 import tw from "tailwind-react-native-classnames";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import 'react-native-url-polyfill/auto';
+
 
 const { width } = Dimensions.get("window");
 

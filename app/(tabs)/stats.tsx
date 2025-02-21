@@ -12,7 +12,7 @@ import {
   Heart, 
   Flame, 
   ChevronDown, 
-  Share 
+  Share2 
 } from "lucide-react-native";
 
 
