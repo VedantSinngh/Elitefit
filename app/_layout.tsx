@@ -3,16 +3,28 @@ import { useEffect, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import { View, Image } from "react-native";
 import tw from "tailwind-react-native-classnames";
+import { getCurrentUser } from "../lib/appwrite";
+import { useRouter } from "expo-router";
+import { testAccountMethods } from "../lib/appwrite";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [appIsReady, setAppIsReady] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     async function prepare() {
       try {
         await new Promise((resolve) => setTimeout(resolve, 4000));
+
+        // Check if user is authenticated
+        const currentUser = await getCurrentUser();
+        if (currentUser) {
+          router.replace("/(tabs)"); // Redirect to tabs if authenticated
+        } else {
+          router.replace("/index"); // Redirect to entry screen if not authenticated
+        }
       } catch (e) {
         console.warn("Preparation failed:", e);
       } finally {
@@ -21,6 +33,10 @@ export default function RootLayout() {
       }
     }
     prepare();
+  }, []);
+
+  useEffect(() => {
+    testAccountMethods();
   }, []);
 
   if (!appIsReady) {
@@ -47,6 +63,7 @@ export default function RootLayout() {
       <Stack.Screen name="auth/login" options={{ headerShown: false }} />
       <Stack.Screen name="auth/signup" options={{ headerShown: false }} />
       <Stack.Screen name="auth/forgotPassword" options={{ headerShown: false }} />
+      <Stack.Screen name="auth/logout" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="+not-found" options={{ headerShown: false }} />
     </Stack>
