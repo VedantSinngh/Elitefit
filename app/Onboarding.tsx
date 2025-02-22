@@ -9,7 +9,6 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
-import axios from "axios";
 import tw from "tailwind-react-native-classnames";
 import { useRouter } from "expo-router";
 
@@ -24,7 +23,7 @@ export default function OnboardingScreen() {
     gender: "",
   });
 
-  const handleContinue = async () => {
+  const handleContinue = () => {
     if (step === 2 && (isNaN(formData.age) || formData.age <= 0)) {
       alert("Please enter a valid age.");
       return;
@@ -40,13 +39,7 @@ export default function OnboardingScreen() {
     if (step < 4) {
       setStep(step + 1);
     } else {
-      try {
-        const response = await axios.post("http://YOUR_MACHINE_IP:5000/api/onboarding", formData);
-        console.log("Onboarding data saved:", response.data);
-        router.push("/auth/signup");
-      } catch (error) {
-        console.error("Error saving onboarding data:", error);
-      }
+      router.push("/auth/signup");
     }
   };
 
