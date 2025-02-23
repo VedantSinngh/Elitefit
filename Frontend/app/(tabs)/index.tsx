@@ -207,7 +207,7 @@ export default function HomeScreen() {
             <Ionicons name="arrow-back" size={24} color="#2563EB" />
             <Text style={tw`text-blue-600 text-lg font-medium ml-2`}>Back to Home</Text>
           </TouchableOpacity>
-
+  
           {/* Workout Page Content */}
           <Text style={tw`text-gray-900 text-2xl font-bold mb-4`}>Workout Plan</Text>
           <View style={tw`mb-4`}>
@@ -246,7 +246,6 @@ export default function HomeScreen() {
       </ScrollView>
     );
   }
-
   return (
     <ScrollView
       style={tw`flex-1 bg-gray-100`}
