@@ -5,74 +5,118 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
-  StyleSheet,
+  Image,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { getCurrentUser } from "../../lib/appwrite";
-import { MotiView } from "moti"; // Added for animations
+import { MotiView, AnimatePresence } from "moti";
+import tw from "tailwind-react-native-classnames";
 
 const { width } = Dimensions.get("window");
 const isTablet = width >= 768;
 const isDesktop = width >= 1024;
 
+const StatCard = ({ icon, label, value, trend }) => (
+  <MotiView
+    from={{ opacity: 0, scale: 0.9 }}
+    animate={{ opacity: 1, scale: 1 }}
+    transition={{ type: "timing", duration: 500 }}
+    style={tw`bg-white rounded-2xl p-4 flex-1 shadow-md`}
+  >
+    <View style={tw`flex-row items-center justify-between mb-2`}>
+      <View style={tw`p-2 rounded-xl ${icon.bg}`}>
+        <Ionicons name={icon.name} size={20} color={icon.color} />
+      </View>
+      <View style={tw`flex-row items-center`}>
+        <Ionicons
+          name={trend >= 0 ? "arrow-up" : "arrow-down"}
+          size={16}
+          color={trend >= 0 ? "#10B981" : "#EF4444"}
+        />
+        <Text style={tw`text-xs ml-1 ${trend >= 0 ? "text-green-500" : "text-red-500"}`}>
+          {Math.abs(trend)}%
+        </Text>
+      </View>
+    </View>
+    <Text style={tw`text-2xl font-bold text-gray-800`}>{value}</Text>
+    <Text style={tw`text-sm text-gray-500 mt-1`}>{label}</Text>
+  </MotiView>
+);
+
 const WeeklyProgressBar = ({ currentWeek, selectedDay, setSelectedDay }) => {
   const getDayAbbreviation = (date) => {
-    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()];
+    return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][date.getDay()];
   };
 
   const getStatusColor = (status, opacity = 1) => {
     switch (status) {
-      case "complete": return `rgba(37, 99, 235, ${opacity})`;
-      case "active": return `rgba(16, 185, 129, ${opacity})`;
-      default: return `rgba(209, 213, 219, ${opacity})`;
+      case "complete":
+        return `rgba(37, 99, 235, ${opacity})`;
+      case "active":
+        return `rgba(16, 185, 129, ${opacity})`;
+      default:
+        return `rgba(209, 213, 219, ${opacity})`;
     }
   };
 
   return (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>Weekly Progress</Text>
+    <View style={tw`bg-white rounded-2xl p-4 shadow-md mb-6`}>
+      <View style={tw`flex-row justify-between items-center mb-4`}>
+        <Text style={tw`text-gray-800 text-lg font-bold`}>Weekly Progress</Text>
+        <TouchableOpacity style={tw`flex-row items-center`}>
+          <Text style={tw`text-blue-600 text-sm mr-1`}>View Details</Text>
+          <Ionicons name="chevron-forward" size={16} color="#2563EB" />
+        </TouchableOpacity>
       </View>
-      <View style={styles.weekGrid}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={tw`flex-row`}
+      >
         {currentWeek.map((day, index) => (
           <TouchableOpacity
             key={index}
             onPress={() => setSelectedDay(day)}
-            style={[
-              styles.dayButton,
-              selectedDay === day && styles.dayButtonActive,
-            ]}
+            style={tw`items-center mx-2`}
           >
             <MotiView
               from={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "timing", duration: 300 }}
+              transition={{
+                type: "spring",
+                delay: index * 100,
+                damping: 15,
+              }}
             >
               <View
                 style={[
-                  styles.progressCircle,
+                  tw`w-12 h-12 rounded-2xl justify-center items-center mb-2`,
                   {
-                    backgroundColor: getStatusColor(day.status, 0.2),
+                    backgroundColor: getStatusColor(day.status, 0.15),
                     borderColor: getStatusColor(day.status),
-                    borderWidth: 2,
-                  }
+                    borderWidth: selectedDay === day ? 2 : 0,
+                    transform: [{ scale: selectedDay === day ? 1.05 : 1 }],
+                  },
                 ]}
               >
-                <View style={styles.innerCircle}>
-                  <Text style={styles.dayNumber}>{day.day}</Text>
-                </View>
+                <Text style={tw`text-gray-800 text-lg font-semibold`}>
+                  {day.day}
+                </Text>
               </View>
-              <Text style={styles.dayText}>{getDayAbbreviation(day.date)}</Text>
+              <Text style={tw`text-gray-500 text-xs font-medium text-center`}>
+                {getDayAbbreviation(day.date)}
+              </Text>
               {day.isToday && (
-                <View style={styles.todayBadge}>
-                  <Text style={styles.todayText}>Today</Text>
+                <View style={tw`absolute -top-2 right-0 bg-blue-600 px-2 py-1 rounded-full`}>
+                  <Text style={tw`text-white text-xs font-medium`}>Today</Text>
                 </View>
               )}
             </MotiView>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
     </View>
   );
 };
@@ -83,6 +127,7 @@ export default function HomeScreen() {
   const [username, setUsername] = useState("User");
   const [selectedDay, setSelectedDay] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showWorkout, setShowWorkout] = useState(false); // New state for workout view
 
   useEffect(() => {
     setTimeout(() => setIsLoading(false), 1000);
@@ -98,7 +143,7 @@ export default function HomeScreen() {
         days.push({
           day: date.getDate(),
           date,
-          status: Math.random() > 0.5 ? 'complete' : 'empty',
+          status: Math.random() > 0.5 ? "complete" : "empty",
           isToday: i === dayOfWeek,
         });
       }
@@ -134,29 +179,94 @@ export default function HomeScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <Ionicons name="fitness-outline" size={32} color="#2563EB" style={styles.loadingIcon} />
+      <View style={tw`flex-1 justify-center items-center bg-gray-100`}>
+        <MotiView
+          from={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{
+            type: "spring",
+            duration: 1000,
+            loop: true,
+          }}
+        >
+          <Ionicons name="fitness-outline" size={40} color="#2563EB" />
+        </MotiView>
       </View>
     );
   }
 
+  if (showWorkout) {
+    return (
+      <ScrollView style={tw`flex-1 bg-gray-100`} showsVerticalScrollIndicator={false}>
+        <View style={tw`w-full max-w-screen-md mx-auto px-4 py-6`}>
+          {/* Back Button */}
+          <TouchableOpacity
+            style={tw`flex-row items-center mb-6`}
+            onPress={() => setShowWorkout(false)}
+          >
+            <Ionicons name="arrow-back" size={24} color="#2563EB" />
+            <Text style={tw`text-blue-600 text-lg font-medium ml-2`}>Back to Home</Text>
+          </TouchableOpacity>
+
+          {/* Workout Page Content */}
+          <Text style={tw`text-gray-900 text-2xl font-bold mb-4`}>Workout Plan</Text>
+          <View style={tw`mb-4`}>
+            <MotiView
+              from={{ opacity: 0, translateY: 20 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              transition={{ type: "timing", duration: 500 }}
+              style={tw`bg-white rounded-2xl p-4 shadow-md mb-4`}
+            >
+              <Text style={tw`text-gray-800 text-lg font-semibold`}>Push-Ups</Text>
+              <Text style={tw`text-gray-500 text-sm mt-1`}>3 sets of 15 reps</Text>
+            </MotiView>
+            <MotiView
+              from={{ opacity: 0, translateY: 20 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              transition={{ type: "timing", duration: 500, delay: 100 }}
+              style={tw`bg-white rounded-2xl p-4 shadow-md mb-4`}
+            >
+              <Text style={tw`text-gray-800 text-lg font-semibold`}>Squats</Text>
+              <Text style={tw`text-gray-500 text-sm mt-1`}>3 sets of 20 reps</Text>
+            </MotiView>
+            <MotiView
+              from={{ opacity: 0, translateY: 20 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              transition={{ type: "timing", duration: 500, delay: 200 }}
+              style={tw`bg-white rounded-2xl p-4 shadow-md`}
+            >
+              <Text style={tw`text-gray-800 text-lg font-semibold`}>Plank</Text>
+              <Text style={tw`text-gray-500 text-sm mt-1`}>Hold for 1 minute</Text>
+            </MotiView>
+          </View>
+          <TouchableOpacity style={tw`bg-blue-600 p-4 rounded-2xl shadow-md`}>
+            <Text style={tw`text-white text-center text-lg font-medium`}>Start Workout</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    );
+  }
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.contentContainer}>
+    <ScrollView
+      style={tw`flex-1 bg-gray-100`}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={tw`w-full max-w-screen-md mx-auto px-4 py-6`}>
         {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.headerTitle}>Welcome back, {username}</Text>
-            <Text style={styles.headerSubtitle}>Let's crush your fitness goals today!</Text>
+        <View style={tw`flex-row justify-between items-center mb-6`}>
+          <View style={tw`flex-1`}>
+            <View style={tw`flex-row items-center`}>
+              <Text style={tw`text-gray-900 text-2xl font-bold`}>Hi, {username}</Text>
+              <View style={tw`ml-2 bg-blue-100 rounded-full p-1`}>
+                <Ionicons name="hand-right-outline" size={20} color="#2563EB" />
+              </View>
+            </View>
+            <Text style={tw`text-gray-500 text-sm mt-1`}>Ready to crush your goals? 💪</Text>
           </View>
-          <View style={styles.headerButtons}>
-            <TouchableOpacity style={styles.secondaryButton}>
-              <Text style={styles.buttonText}>Weekly Report</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.primaryButton}>
-              <Text style={styles.buttonTextWhite}>Start Workout</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={tw`p-2 bg-white rounded-full shadow-sm`}>
+            <Ionicons name="notifications-outline" size={24} color="#374151" />
+          </TouchableOpacity>
         </View>
 
         {/* Weekly Progress */}
@@ -167,240 +277,54 @@ export default function HomeScreen() {
         />
 
         {/* Action Cards */}
-        <View style={styles.actionGrid}>
-          <TouchableOpacity style={styles.actionCardDark}>
-            <Text style={styles.actionTitle}>Create New Goal</Text>
-            <Text style={styles.actionSubtitle}>Set and track your fitness milestones</Text>
-            <View style={styles.actionButton}>
-              <Text style={styles.actionButtonText}>Get Started →</Text>
-            </View>
+        <View style={tw`mb-4`}>
+          <TouchableOpacity onPress={() => setShowWorkout(true)}>
+            <MotiView
+              from={{ translateY: 20, opacity: 0 }}
+              animate={{ translateY: 0, opacity: 1 }}
+              transition={{ type: "timing", duration: 500 }}
+              style={tw`bg-gray-900 rounded-2xl p-5 shadow-lg mb-4`}
+            >
+              <View style={tw`flex-row items-center justify-between`}>
+                <View style={tw`flex-1`}>
+                  <Text style={tw`text-white text-xl font-bold mb-2`}>Workout</Text>
+                  <Text style={tw`text-gray-400 text-sm`}>Start your daily exercise routine</Text>
+                </View>
+                <View style={tw`bg-gray-700 p-3 rounded-xl`}>
+                  <Ionicons name="barbell-outline" size={24} color="white" />
+                </View>
+              </View>
+              <View style={tw`flex-row items-center mt-4`}>
+                <Text style={tw`text-white text-sm font-medium`}>Begin Now</Text>
+                <Ionicons name="arrow-forward" size={16} color="white" style={tw`ml-2`} />
+              </View>
+            </MotiView>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionCardBlue}>
-            <Text style={styles.actionTitle}>AI Training Assistant</Text>
-            <Text style={styles.actionSubtitle}>Get personalized workout recommendations</Text>
-            <View style={styles.actionButtonWhite}>
-              <Text style={styles.actionButtonTextBlue}>Chat Now</Text>
-            </View>
+          <TouchableOpacity>
+            <MotiView
+              from={{ translateY: 20, opacity: 0 }}
+              animate={{ translateY: 0, opacity: 1 }}
+              transition={{ type: "timing", duration: 500, delay: 200 }}
+              style={tw`bg-blue-600 rounded-2xl p-5 shadow-lg`}
+            >
+              <View style={tw`flex-row items-center justify-between`}>
+                <View style={tw`flex-1`}>
+                  <Text style={tw`text-white text-xl font-bold mb-2`}>AI Training Assistant</Text>
+                  <Text style={tw`text-blue-100 text-sm`}>Get personalized workout recommendations</Text>
+                </View>
+                <View style={tw`bg-white p-3 rounded-xl`}>
+                  <Ionicons name="fitness" size={24} color="#2563EB" />
+                </View>
+              </View>
+              <View style={tw`flex-row items-center mt-4`}>
+                <Text style={tw`text-white text-sm font-medium`}>Chat Now</Text>
+                <Ionicons name="arrow-forward" size={16} color="white" style={tw`ml-2`} />
+              </View>
+            </MotiView>
           </TouchableOpacity>
         </View>
       </View>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F3F4F6",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#F3F4F6",
-  },
-  loadingIcon: {
-    transform: [{ rotate: "360deg" }],
-    animationDuration: "1s",
-    animationIterationCount: "infinite",
-  },
-  contentContainer: {
-    width: "100%",
-    maxWidth: isDesktop ? 1200 : isTablet ? 768 : 480,
-    alignSelf: "center",
-    paddingHorizontal: isDesktop ? 24 : 16,
-    paddingVertical: isDesktop ? 40 : 32,
-  },
-  header: {
-    flexDirection: isTablet ? "row" : "column",
-    justifyContent: "space-between",
-    alignItems: isTablet ? "center" : "flex-start",
-    marginBottom: isDesktop ? 40 : 32,
-    gap: isTablet ? 16 : 24,
-  },
-  headerTitle: {
-    fontSize: isDesktop ? 34 : isTablet ? 30 : 26,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  headerSubtitle: {
-    fontSize: isDesktop ? 16 : 14,
-    color: "#6B7280",
-    marginTop: 4,
-  },
-  headerButtons: {
-    flexDirection: "row",
-    gap: isDesktop ? 16 : 12,
-    alignSelf: isTablet ? "center" : "flex-end",
-  },
-  secondaryButton: {
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: isDesktop ? 20 : 16,
-    paddingVertical: 10,
-    borderRadius: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  primaryButton: {
-    backgroundColor: "#2563EB",
-    paddingHorizontal: isDesktop ? 20 : 16,
-    paddingVertical: 10,
-    borderRadius: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  buttonText: {
-    fontSize: isDesktop ? 16 : 14,
-    fontWeight: "500",
-    color: "#374151",
-  },
-  buttonTextWhite: {
-    fontSize: isDesktop ? 16 : 14,
-    fontWeight: "500",
-    color: "#FFFFFF",
-  },
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: isDesktop ? 24 : 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    marginBottom: isDesktop ? 40 : 32,
-  },
-  cardHeader: {
-    marginBottom: isDesktop ? 24 : 16,
-  },
-  cardTitle: {
-    fontSize: isDesktop ? 18 : 16,
-    fontWeight: "600",
-    color: "#374151",
-  },
-  weekGrid: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-  },
-  dayButton: {
-    width: isDesktop ? "12%" : "14%",
-    alignItems: "center",
-    padding: isDesktop ? 12 : 8,
-    borderRadius: 12,
-  },
-  dayButtonActive: {
-    backgroundColor: "#DBEAFE",
-    transform: [{ scale: 1.05 }],
-  },
-  progressCircle: {
-    width: isDesktop ? 40 : 32,
-    height: isDesktop ? 40 : 32,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  innerCircle: {
-    width: isDesktop ? 28 : 24,
-    height: isDesktop ? 28 : 24,
-    borderRadius: 14,
-    backgroundColor: "#FFFFFF",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  dayNumber: {
-    fontSize: isDesktop ? 14 : 12,
-    fontWeight: "500",
-    color: "#374151",
-  },
-  dayText: {
-    fontSize: isDesktop ? 12 : 10,
-    color: "#6B7280",
-    fontWeight: "500",
-  },
-  todayBadge: {
-    position: "absolute",
-    top: -8,
-    backgroundColor: "#2563EB",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  todayText: {
-    fontSize: isDesktop ? 10 : 8,
-    color: "#FFFFFF",
-    fontWeight: "500",
-  },
-  actionGrid: {
-    flexDirection: isTablet ? "row" : "column",
-    gap: isDesktop ? 24 : 16,
-  },
-  actionCardDark: {
-    flex: 1,
-    backgroundColor: "#111827",
-    borderRadius: 16,
-    padding: isDesktop ? 24 : 16,
-    minHeight: isTablet ? 160 : 140,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  actionCardBlue: {
-    flex: 1,
-    backgroundColor: "#2563EB",
-    borderRadius: 16,
-    padding: isDesktop ? 24 : 16,
-    minHeight: isTablet ? 160 : 140,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  actionTitle: {
-    fontSize: isDesktop ? 20 : 18,
-    fontWeight: "600",
-    color: "#FFFFFF",
-  },
-  actionSubtitle: {
-    fontSize: isDesktop ? 14 : 12,
-    color: "#D1D5DB",
-    marginTop: 4,
-  },
-  actionButton: {
-    alignSelf: "flex-end",
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    marginTop: 16,
-  },
-  actionButtonWhite: {
-    alignSelf: "flex-end",
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    marginTop: 16,
-  },
-  actionButtonText: {
-    fontSize: isDesktop ? 14 : 12,
-    fontWeight: "500",
-    color: "#FFFFFF",
-  },
-  actionButtonTextBlue: {
-    fontSize: isDesktop ? 14 : 12,
-    fontWeight: "500",
-    color: "#2563EB",
-  },
-});
