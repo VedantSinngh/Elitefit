@@ -9,6 +9,7 @@ import {
   Platform,
   StyleSheet,
   Dimensions,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { format } from "date-fns";
@@ -17,8 +18,9 @@ import { BlurView } from "expo-blur";
 import { MotiView } from "moti";
 
 const { width } = Dimensions.get("window");
-const HEADER_MAX_HEIGHT = 90;
-const HEADER_MIN_HEIGHT = 60;
+const HEADER_MAX_HEIGHT = 100;
+const HEADER_MIN_HEIGHT = 70;
+const GAME_BOX_SIZE = (width - 48) / 2; // Two boxes with spacing
 
 interface ActivityData {
   date: Date;
@@ -27,6 +29,13 @@ interface ActivityData {
   heartRate: number;
   calories: number;
   steps: number;
+}
+
+interface GameData {
+  id: string;
+  title: string;
+  imagePath: string;
+  redirectPath: string;
 }
 
 export default function ActivitiesScreen() {
@@ -41,7 +50,7 @@ export default function ActivitiesScreen() {
     extrapolate: "clamp",
   });
 
-  // Sample data generation with realistic values
+  // Sample activity data
   const activityData: ActivityData[] = [
     {
       date: new Date(),
@@ -51,6 +60,22 @@ export default function ActivitiesScreen() {
       calories: Math.round(Math.random() * 200 + 300),
       steps: Math.round(Math.random() * 3000 + 6000),
     },
+  ];
+
+  // Sample game data with image paths (replace with your actual paths)
+  const gameData: GameData[] = [
+    {
+      id: "1",
+      title: "Temple Run Legends",
+      imagePath: require("../../assets/images/temple-run-legends.webp"),
+      redirectPath: "/games/racing",
+    },
+    {
+      id: "2",
+      title: "Subway Surfer",
+      imagePath: require("../../assets/images/SubwaySurfer-blog-banner-1-768x432.jpg"),
+      redirectPath: "/games/puzzle",
+    }
   ];
 
   const renderActivityCard = useCallback(
@@ -84,23 +109,64 @@ export default function ActivitiesScreen() {
     []
   );
 
+  const handleGamePress = (path: string) => {
+    console.log(`Navigating to: ${path}`);
+    // Implement your navigation logic here (e.g., using React Navigation)
+    // navigation.navigate(path);
+  };
+
+  const RenderGameBox = useCallback(
+    ({ item }: { item: GameData }) => (
+      <MotiView
+        from={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: "spring", duration: 500 }}
+      >
+        <TouchableOpacity
+          style={styles.gameBox}
+          onPress={() => handleGamePress(item.redirectPath)}
+        >
+          <Image
+            source={item.imagePath}
+            style={styles.gameImage}
+            resizeMode="cover"
+          />
+          <View style={styles.gameOverlay}>
+            <Text style={styles.gameTitle}>{item.title}</Text>
+          </View>
+        </TouchableOpacity>
+      </MotiView>
+    ),
+    []
+  );
+
   const renderContent = () => {
     switch (selectedTab) {
       case "Games":
         return (
           <View style={styles.streakSection}>
-            {/* Add your game boxes here */}
+            <Text style={styles.sectionTitle}>Your Games</Text>
+            <View style={styles.gamesContainer}>
+              {gameData.map((game) => (
+                <RenderGameBox key={game.id} item={game} />
+              ))}
+            </View>
           </View>
         );
       case "Leaderboard":
         return (
           <View style={styles.streakSection}>
             <Text style={styles.sectionTitle}>Leaderboard</Text>
-            <View style={styles.leaderboardPlaceholder}>
+            <MotiView
+              from={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              style={styles.leaderboardPlaceholder}
+            >
+              <Ionicons name="trophy" size={40} color="#FFD700" />
               <Text style={styles.placeholderText}>
                 Compete with friends! Leaderboard coming soon.
               </Text>
-            </View>
+            </MotiView>
           </View>
         );
       default:
@@ -112,37 +178,41 @@ export default function ActivitiesScreen() {
     <SafeAreaView style={styles.container}>
       <Animated.View style={[styles.header, { height: headerHeight }]}>
         <View style={styles.headerContent}>
-          <View style={styles.tabContainer}>
-            {["Games", "Leaderboard"].map((tab) => (
-              <TouchableOpacity
-                key={tab}
-                style={[
-                  styles.tabButton,
-                  selectedTab === tab && styles.tabButtonActive,
-                ]}
-                onPress={() => setSelectedTab(tab)}
-              >
-                <Text
+          <Text style={styles.headerTitle}>Activities</Text>
+          <View style={styles.headerControls}>
+            <View style={styles.tabContainer}>
+              {["Games", "Leaderboard"].map((tab) => (
+                <TouchableOpacity
+                  key={tab}
                   style={[
-                    styles.tabText,
-                    selectedTab === tab && styles.tabTextActive,
+                    styles.tabButton,
+                    selectedTab === tab && styles.tabButtonActive,
                   ]}
+                  onPress={() => setSelectedTab(tab)}
                 >
-                  {tab}
-                </Text>
-                {selectedTab === tab && <View style={styles.tabIndicator} />}
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={[
+                      styles.tabText,
+                      selectedTab === tab && styles.tabTextActive,
+                    ]}
+                  >
+                    {tab}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity
+              style={styles.filterButton}
+              onPress={() =>
+                setFilterPeriod(
+                  filterPeriod === "This Week" ? "This Month" : "This Week"
+                )
+              }
+            >
+              <Text style={styles.filterText}>{filterPeriod}</Text>
+              <Ionicons name="chevron-down" size={16} color="#FFFFFF" />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.filterButton}
-            onPress={() =>
-              setFilterPeriod(filterPeriod === "This Week" ? "This Month" : "This Week")
-            }
-          >
-            <Text style={styles.filterText}>{filterPeriod}</Text>
-            <Ionicons name="chevron-down" size={16} color="#007AFF" />
-          </TouchableOpacity>
         </View>
       </Animated.View>
 
@@ -255,66 +325,71 @@ export default function ActivitiesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F5F6F8",
   },
   header: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#007AFF",
     paddingHorizontal: 16,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
+    paddingBottom: 12,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   headerContent: {
+    flex: 1,
+    justifyContent: "space-between",
+    paddingTop: Platform.OS === "ios" ? 10 : 20,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: -0.5,
+  },
+  headerControls: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: Platform.OS === "ios" ? 0 : 8,
+    marginTop: 8,
   },
   tabContainer: {
     flexDirection: "row",
-    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 20,
+    padding: 4,
   },
   tabButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    position: "relative",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 16,
   },
   tabButtonActive: {
-    backgroundColor: "#F6F8FA",
-    borderRadius: 20,
-  },
-  tabIndicator: {
-    position: "absolute",
-    bottom: -8,
-    left: "50%",
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#007AFF",
-    transform: [{ translateX: -2 }],
+    backgroundColor: "#FFFFFF",
   },
   tabText: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: "#666666",
+    fontSize: 14,
+    fontWeight: "600",
+    color: "rgba(255, 255, 255, 0.8)",
   },
   tabTextActive: {
     color: "#007AFF",
-    fontWeight: "600",
   },
   filterButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F6F8FA",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginLeft: 12,
   },
   filterText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#007AFF",
-    marginRight: 4,
+    color: "#FFFFFF",
+    marginRight: 6,
   },
   scrollView: {
     flex: 1,
@@ -326,10 +401,45 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "700",
-    color: "#000000",
-    letterSpacing: -0.5,
+    color: "#1A1A1A",
+    marginBottom: 16,
+  },
+  gamesContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  gameBox: {
+    width: GAME_BOX_SIZE,
+    height: GAME_BOX_SIZE * 1.2,
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: "hidden",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  gameImage: {
+    width: "100%",
+    height: "100%",
+  },
+  gameOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    padding: 8,
+  },
+  gameTitle: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
   },
   activityCard: {
     marginBottom: 12,
@@ -380,15 +490,17 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   leaderboardPlaceholder: {
-    backgroundColor: "#F8F9FA",
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    padding: 16,
+    padding: 24,
     alignItems: "center",
+    elevation: 2,
   },
   placeholderText: {
-    fontSize: 14,
+    fontSize: 16,
     color: "#666",
     textAlign: "center",
+    marginTop: 12,
   },
   modalContainer: {
     flex: 1,
