@@ -28,6 +28,7 @@ export default function OnboardingScreen() {
     gender: "",
   });
 
+  // Smooth animations for step transitions
   useEffect(() => {
     Animated.spring(slideAnim, {
       toValue: 0,
@@ -40,10 +41,17 @@ export default function OnboardingScreen() {
   const handleStepChange = (newStep) => {
     Animated.timing(slideAnim, {
       toValue: newStep > step ? width : -width,
-      duration: 0,
+      duration: 300,
       useNativeDriver: true,
     }).start(() => {
       setStep(newStep);
+      slideAnim.setValue(newStep > step ? -width : width);
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 20,
+        friction: 7,
+        useNativeDriver: true,
+      }).start();
     });
   };
 
@@ -55,8 +63,8 @@ export default function OnboardingScreen() {
         return !isNaN(formData.age) && formData.age > 0 && formData.age < 120;
       case 3:
         return (
-          !isNaN(formData.weight) && 
-          formData.weight > 0 && 
+          !isNaN(formData.weight) &&
+          formData.weight > 0 &&
           formData.weight < 300 &&
           formData.height.trim() !== ""
         );
@@ -95,6 +103,7 @@ export default function OnboardingScreen() {
     }
   };
 
+  // Consistent UI for ProgressBar
   const ProgressBar = () => (
     <View style={tw`flex-row justify-between px-4 mb-4`}>
       {[1, 2, 3, 4].map((num) => (
@@ -109,20 +118,21 @@ export default function OnboardingScreen() {
     </View>
   );
 
+  // Consistent UI for StepButton
   const StepButton = ({ label, selected, onPress }) => (
     <TouchableOpacity
       style={[
         tw`p-4 rounded-xl border-2 mb-3`,
-        selected 
-          ? tw`border-blue-500 bg-blue-50` 
-          : tw`border-gray-200 bg-gray-50`,
+        selected ? tw`border-blue-500 bg-blue-50` : tw`border-gray-200 bg-gray-50`,
       ]}
       onPress={onPress}
     >
-      <Text style={[
-        tw`text-base font-medium text-center`,
-        selected ? tw`text-blue-500` : tw`text-gray-700`
-      ]}>
+      <Text
+        style={[
+          tw`text-base font-medium text-center`,
+          selected ? tw`text-blue-500` : tw`text-gray-700`,
+        ]}
+      >
         {label}
       </Text>
     </TouchableOpacity>
@@ -130,9 +140,7 @@ export default function OnboardingScreen() {
 
   const ExperienceStep = () => (
     <View style={tw`flex-1 px-6`}>
-      <Text style={tw`text-3xl font-bold mb-2 text-gray-800`}>
-        Fitness Experience
-      </Text>
+      <Text style={tw`text-3xl font-bold mb-2 text-gray-800`}>Fitness Experience</Text>
       <Text style={tw`text-base text-gray-600 mb-8`}>
         Help us create your perfect workout plan
       </Text>
@@ -150,9 +158,8 @@ export default function OnboardingScreen() {
   const AgeStep = () => (
     <View style={tw`flex-1 px-6`}>
       <Text style={tw`text-3xl font-bold mb-2 text-gray-800`}>Your Age</Text>
-      <Text style={tw`text-base text-gray-600 mb-8`}>
-        Let's personalize your journey
-      </Text>
+      <Text style={tw`text-base text-gray-600 mb-8`}>Let's personalize your journey</Text>
+      {/* Proper numeric input handling for age */}
       <TextInput
         style={[
           tw`border-2 border-gray-200 rounded-xl p-4 text-lg mb-4 bg-gray-50`,
@@ -161,8 +168,10 @@ export default function OnboardingScreen() {
         keyboardType="numeric"
         value={formData.age}
         onChangeText={(text) => {
-          const numericValue = text.replace(/[^0-9]/g, '');
-          setFormData({ ...formData, age: numericValue });
+          const numericValue = text.replace(/[^0-9]/g, "");
+          if (numericValue.length <= 3) {
+            setFormData({ ...formData, age: numericValue });
+          }
         }}
         placeholder="Enter your age"
         maxLength={3}
@@ -172,14 +181,11 @@ export default function OnboardingScreen() {
 
   const MeasurementsStep = () => (
     <View style={tw`flex-1 px-6`}>
-      <Text style={tw`text-3xl font-bold mb-2 text-gray-800`}>
-        Body Measurements
-      </Text>
-      <Text style={tw`text-base text-gray-600 mb-8`}>
-        Help us understand your body better
-      </Text>
+      <Text style={tw`text-3xl font-bold mb-2 text-gray-800`}>Body Measurements</Text>
+      <Text style={tw`text-base text-gray-600 mb-8`}>Help us understand your body better</Text>
       <View style={tw`mb-6`}>
         <Text style={tw`text-lg font-medium mb-2 text-gray-700`}>Weight (kg)</Text>
+        {/* Proper numeric input handling for weight */}
         <TextInput
           style={[
             tw`border-2 border-gray-200 rounded-xl p-4 text-lg bg-gray-50`,
@@ -188,8 +194,10 @@ export default function OnboardingScreen() {
           keyboardType="numeric"
           value={formData.weight}
           onChangeText={(text) => {
-            const numericValue = text.replace(/[^0-9.]/g, '');
-            setFormData({ ...formData, weight: numericValue });
+            const numericValue = text.replace(/[^0-9.]/g, "");
+            if (numericValue.split(".").length <= 2 && numericValue.length <= 5) {
+              setFormData({ ...formData, weight: numericValue });
+            }
           }}
           placeholder="Enter weight in kg"
           maxLength={5}
@@ -236,12 +244,7 @@ export default function OnboardingScreen() {
     };
 
     return (
-      <Animated.View
-        style={[
-          { transform: [{ translateX: slideAnim }] },
-          tw`flex-1`,
-        ]}
-      >
+      <Animated.View style={[{ transform: [{ translateX: slideAnim }] }, tw`flex-1`]}>
         {steps[step]}
       </Animated.View>
     );
@@ -249,36 +252,30 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView style={tw`flex-1 bg-white`}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"} 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={tw`flex-1`}
       >
+        {/* Consistent UI for header */}
         <View style={tw`flex-row justify-between items-center p-4`}>
           {step > 1 && (
-            <TouchableOpacity 
-              onPress={() => handleStepChange(step - 1)}
-              style={tw`p-2`}
-            >
+            <TouchableOpacity onPress={() => handleStepChange(step - 1)} style={tw`p-2`}>
               <Text style={tw`text-2xl text-gray-800`}>←</Text>
             </TouchableOpacity>
           )}
           <View style={tw`flex-1 items-center`}>
-            <Text style={tw`text-base font-medium text-gray-600`}>
-              Step {step} of 4
-            </Text>
+            <Text style={tw`text-base font-medium text-gray-600`}>Step {step} of 4</Text>
           </View>
           {step > 1 && <View style={tw`w-8`} />}
         </View>
 
         <ProgressBar />
-        
-        <ScrollView 
-          contentContainerStyle={tw`flex-grow`}
-          keyboardShouldPersistTaps="handled"
-        >
+
+        <ScrollView contentContainerStyle={tw`flex-grow`} keyboardShouldPersistTaps="handled">
           {renderStep()}
         </ScrollView>
 
+        {/* Consistent UI for button */}
         <View style={tw`p-6`}>
           <TouchableOpacity
             style={[
@@ -288,7 +285,7 @@ export default function OnboardingScreen() {
             onPress={handleContinue}
           >
             <Text style={tw`text-white text-lg font-bold`}>
-              {step === 4 ? 'Complete' : 'Continue'}
+              {step === 4 ? "Complete" : "Continue"}
             </Text>
           </TouchableOpacity>
         </View>
